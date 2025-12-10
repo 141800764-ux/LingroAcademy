@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lesson - Lingro Academy</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+body { background: linear-gradient(135deg, #1540A6 0%, #3C6EFA 60%, #D4AF37 100%); color:#fff; font-family:'Inter',sans-serif; min-height:100vh; display:flex; justify-content:center; align-items:center; }
+iframe { width:90%; height:80vh; border:none; border-radius:15px; }
+</style>
+</head>
+<body>
+<iframe id="lessonFrame"></iframe>
+<script>
+const lesson = localStorage.getItem("lessonToOpen");
+if(lesson) document.getElementById("lessonFrame").src = lesson;
+
+const student = JSON.parse(localStorage.getItem("loggedInStudent"));
+if(student && lesson){
+    const students = JSON.parse(localStorage.getItem("students")) || [];
+    const sIndex = students.findIndex(s => s.email === student.email);
+    if(sIndex > -1 && !students[sIndex].progress.includes(lesson)){
+        students[sIndex].progress.push(lesson);
+        localStorage.setItem("students", JSON.stringify(students));
+    }
+}
+</script>
+</body>
+</html>
