@@ -57,8 +57,9 @@ if(student) document.getElementById("studentName").innerText=student.name;
 function previewLesson(url){document.getElementById("previewIframe").src=url;new bootstrap.Modal(document.getElementById("lessonModal")).show();}
 function logout(){localStorage.removeItem("loggedInStudent");window.location.href="index.html";}
 
-/* ---------- WEBRTC + CALL NOTIFICATION ---------- */
 const socket = io('http://localhost:3000');
+socket.emit('register-student');
+
 let localStream, peerConnection;
 const config={iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
 const studentVideo=document.getElementById("studentVideo");
@@ -66,9 +67,7 @@ const teacherVideo=document.getElementById("teacherVideo");
 const muteBtn=document.getElementById("muteBtn");
 
 // Incoming call alert
-socket.on('call-start', () => {
-    alert("Incoming lesson from teacher! The call will connect automatically.");
-});
+socket.on('call-start', () => alert("Incoming lesson from teacher! The call will connect automatically."));
 
 socket.on('offer', async offer=>{
     localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
@@ -88,9 +87,7 @@ socket.on('offer', async offer=>{
 socket.on('ice-candidate', async candidate=>{if(peerConnection) await peerConnection.addIceCandidate(candidate);});
 
 // Receive shared lesson from teacher
-socket.on('share-lesson', lesson => {
-    document.getElementById("lessonVideo").src = lesson;
-});
+socket.on('share-lesson', lesson => document.getElementById("lessonVideo").src = lesson);
 
 muteBtn.onclick=()=>{localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled; muteBtn.innerText=localStream.getAudioTracks()[0].enabled?"Mute":"Unmute";};
 </script>
