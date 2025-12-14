@@ -115,6 +115,9 @@ async function startCall(){
     peerConnection.ontrack = e => studentVideo.srcObject = e.streams[0];
     peerConnection.onicecandidate = e => { if(e.candidate) socket.emit('ice-candidate', e.candidate); };
 
+    // Notify students that a call is starting
+    socket.emit('call-start');
+
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
     socket.emit('offer', offer);

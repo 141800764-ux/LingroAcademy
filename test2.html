@@ -57,13 +57,18 @@ if(student) document.getElementById("studentName").innerText=student.name;
 function previewLesson(url){document.getElementById("previewIframe").src=url;new bootstrap.Modal(document.getElementById("lessonModal")).show();}
 function logout(){localStorage.removeItem("loggedInStudent");window.location.href="index.html";}
 
-/* ---------- WEBRTC SOCKET.IO ---------- */
+/* ---------- WEBRTC + CALL NOTIFICATION ---------- */
 const socket = io('http://localhost:3000');
 let localStream, peerConnection;
 const config={iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
 const studentVideo=document.getElementById("studentVideo");
 const teacherVideo=document.getElementById("teacherVideo");
 const muteBtn=document.getElementById("muteBtn");
+
+// Incoming call alert
+socket.on('call-start', () => {
+    alert("Incoming lesson from teacher! The call will connect automatically.");
+});
 
 socket.on('offer', async offer=>{
     localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
