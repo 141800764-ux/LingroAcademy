@@ -23,7 +23,14 @@ video { width:100%; border-radius:15px; margin-top:10px; }
 
 <div class="container text-center mt-5">
 <h2 class="mb-4">Teaching Tools</h2>
-<button class="btn btn-primary btn-lg mb-5" onclick="startCall()">Start Lesson & Video Call</button>
+<button class="btn btn-primary btn-lg mb-3" onclick="startCall()">Start Lesson & Video Call</button>
+
+<!-- Call Student Section -->
+<div class="mb-4">
+    <button class="btn btn-info" onclick="generateCallId()">Generate Call ID</button>
+    <span id="generatedCallId" class="fw-bold ms-2"></span>
+    <button class="btn btn-success ms-3" onclick="callStudent()">Call Student</button>
+</div>
 
 <h3 class="mb-4">Lesson Materials</h3>
 <div class="row justify-content-center g-4">
@@ -72,8 +79,16 @@ video { width:100%; border-radius:15px; margin-top:10px; }
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
 const socket = io('http://localhost:3000');
-socket.emit('register-teacher');
+let localStream, peerConnection;
+const config = { iceServers:[{ urls:"stun:stun.l.google.com:19302" }] };
+const teacherVideo=document.getElementById("teacherVideo");
+const studentVideo=document.getElementById("studentVideo");
+const muteBtn=document.getElementById("muteBtn");
+const endCallBtn=document.getElementById("endCallBtn");
 
+let currentCallId = "";
+
+/* ---------- LESSON LOGIC ---------- */
 function previewLesson(url){
     document.getElementById("previewIframe").src=url;
     localStorage.setItem("lessonToShare", url);
@@ -85,26 +100,20 @@ function shareLesson(){
     if(!lesson) return alert("No lesson selected");
     localStorage.setItem("lessonToOpen", lesson);
     socket.emit('share-lesson', lesson);
-    document.getElementById("lessonVideo").src = lesson;
+    alert("Lesson shared with students");
     bootstrap.Modal.getInstance(document.getElementById("lessonModal")).hide();
+    document.getElementById("lessonVideo").src = lesson;
 }
 
 function logout(){ window.location.href="index.html"; }
 
-let localStream, peerConnection;
-const config = { iceServers:[{ urls:"stun:stun.l.google.com:19302" }] };
-const teacherVideo = document.getElementById("teacherVideo");
-const studentVideo = document.getElementById("studentVideo");
-const muteBtn = document.getElementById("muteBtn");
-const endCallBtn = document.getElementById("endCallBtn");
-
+/* ---------- WEBRTC ---------- */
 async function startCall(){
     localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
     teacherVideo.srcObject = localStream;
 
     peerConnection = new RTCPeerConnection(config);
     localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
-
     peerConnection.ontrack = e => studentVideo.srcObject = e.streams[0];
     peerConnection.onicecandidate = e => { if(e.candidate) socket.emit('ice-candidate', e.candidate); };
 
@@ -130,6 +139,20 @@ endCallBtn.onclick = () => {
     teacherVideo.srcObject = null;
     studentVideo.srcObject = null;
 };
+
+/* ---------- CALL STUDENT WITH GENERATED ID ---------- */
+function generateCallId(){
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    currentCallId = '';
+    for(let i=0;i<4;i++) currentCallId += chars.charAt(Math.floor(Math.random()*chars.length));
+    document.getElementById('generatedCallId').innerText = currentCallId;
+}
+
+function callStudent(){
+    if(!currentCallId) return alert("Generate a Call ID first");
+    socket.emit('call-student', currentCallId);
+    alert("Call sent with ID: " + currentCallId);
+}
 </script>
 </body>
 </html>

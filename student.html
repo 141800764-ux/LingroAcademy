@@ -12,19 +12,13 @@ video{width:100%;border-radius:15px;margin-top:10px;}
 .navbar{background-color:rgba(0,0,0,0.4);}
 h2,h3{text-shadow:1px 1px 3px rgba(0,0,0,0.5);}
 #incomingCallPopup{
-    position: fixed;
-    top: 20px; right: 20px;
-    background-color: #1540A6;
-    color: #fff;
-    padding: 20px;
-    border-radius: 10px;
+    position: fixed; top: 20px; right: 20px;
+    background-color: #1540A6; color: #fff;
+    padding: 20px; border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    display: none;
-    z-index: 1000;
+    display: none; z-index: 1000;
 }
-#incomingCallPopup button{
-    margin-top: 10px;
-}
+#incomingCallPopup button{margin-top: 10px;}
 </style>
 </head>
 <body>
@@ -37,6 +31,12 @@ h2,h3{text-shadow:1px 1px 3px rgba(0,0,0,0.5);}
 
 <div class="container text-center mt-5">
 <h2 class="mb-4">Welcome, <span id="studentName"></span></h2>
+
+<!-- Register Call ID -->
+<div class="mb-4">
+    <input type="text" id="studentCallIdInput" placeholder="Enter Call ID from Teacher" class="form-control w-50 d-inline">
+    <button class="btn btn-info ms-2" onclick="registerCallId()">Register Call ID</button>
+</div>
 
 <h3 class="mb-4">Self-Study Lessons</h3>
 <div class="row justify-content-center g-4">
@@ -54,7 +54,7 @@ h2,h3{text-shadow:1px 1px 3px rgba(0,0,0,0.5);}
 
 <!-- Incoming Call Popup -->
 <div id="incomingCallPopup">
-    <div><strong>Incoming lesson from teacher!</strong></div>
+    <div><strong id="incomingCallText"></strong></div>
     <button class="btn btn-success" id="joinCallBtn">Join Call</button>
 </div>
 
@@ -87,12 +87,27 @@ const teacherVideo=document.getElementById("teacherVideo");
 const muteBtn=document.getElementById("muteBtn");
 const incomingCallPopup=document.getElementById("incomingCallPopup");
 const joinCallBtn=document.getElementById("joinCallBtn");
+const incomingCallText=document.getElementById("incomingCallText");
 
-socket.on('call-start', () => {
-    incomingCallPopup.style.display = 'block';
+let registeredCallId = "";
+
+/* Register the call ID that student will listen for */
+function registerCallId(){
+    const inputId = document.getElementById("studentCallIdInput").value.trim();
+    if(!inputId) return alert("Enter the Call ID from the teacher");
+    registeredCallId = inputId;
+    socket.emit('register-call-id', registeredCallId);
+    alert("Call ID registered: " + registeredCallId);
+}
+
+/* Handle incoming call from teacher for matching ID */
+socket.on('incoming-call', (callId) => {
+    if(callId === registeredCallId){
+        incomingCallText.innerText = `Incoming call. Call ID: ${callId}`;
+        incomingCallPopup.style.display = 'block';
+    }
 });
 
-// When student clicks Join Call
 joinCallBtn.onclick = async () => {
     incomingCallPopup.style.display = 'none';
     localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
@@ -102,8 +117,11 @@ joinCallBtn.onclick = async () => {
     localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
     peerConnection.ontrack = e => teacherVideo.srcObject = e.streams[0];
     peerConnection.onicecandidate = e => { if(e.candidate) socket.emit('ice-candidate', e.candidate); };
+
+    socket.emit('answer-call', registeredCallId);
 };
 
+/* ---------- WebRTC offer/answer ---------- */
 socket.on('offer', async offer => {
     if(!peerConnection){
         localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
@@ -120,7 +138,6 @@ socket.on('offer', async offer => {
 });
 
 socket.on('ice-candidate', async candidate => { if(peerConnection) await peerConnection.addIceCandidate(candidate); });
-
 socket.on('share-lesson', lesson => document.getElementById("lessonVideo").src = lesson);
 
 muteBtn.onclick = () => {
