@@ -1,47 +1,54 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: "*" }
-});
+const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(__dirname));
 
 let teacherSocket = null;
-let studentSockets = []; // {id: socket.id, socket: socket, callId: string}
+let students = {}; // socketId → socket
 
-io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+io.on("connection", socket => {
+    console.log("Connected:", socket.id);
 
-    socket.on('register-teacher', () => {
+    socket.on("register-teacher", () => {
         teacherSocket = socket;
-        console.log('Teacher registered:', socket.id);
+        socket.emit("student-list", Object.keys(students));
     });
 
-    socket.on('register-student', () => {
-        studentSockets.push({id: socket.id, socket: socket, callId: ""});
-        console.log('Student registered:', socket.id);
-    });
-
-    // Student registers their call ID
-    socket.on('register-call-id', (callId) => {
-        const student = studentSockets.find(s => s.id === socket.id);
-        if(student) student.callId = callId;
-        console.log(`Student ${socket.id} registered call ID: ${callId}`);
-    });
-
-    // Teacher calls student by call ID
-    socket.on('call-student', (callId) => {
-        const student = studentSockets.find(s => s.callId === callId);
-        if(student){
-            student.socket.emit('incoming-call', callId);
-            console.log(`Call sent to student ${student.id} with ID ${callId}`);
+    socket.on("register-student", () => {
+        students[socket.id] = socket;
+        if (teacherSocket) {
+            teacherSocket.emit("student-list", Object.keys(students));
         }
     });
 
-    // Student accepts call
-    socket.on('answer-call', (callId) => {
-        if(teacherSocket)
+    socket.on("call-student", studentId => {
+        if (students[studentId]) {
+            students[studentId].emit("incoming-call");
+        }
+    });
+
+    socket.on("offer", offer => socket.broadcast.emit("offer", offer));
+    socket.on("answer", answer => teacherSocket?.emit("answer", answer));
+    socket.on("ice-candidate", c => socket.broadcast.emit("ice-candidate", c));
+
+    socket.on("share-lesson", lesson => {
+        Object.values(students).forEach(s =>
+            s.emit("share-lesson", lesson)
+        );
+    });
+
+    socket.on("disconnect", () => {
+        delete students[socket.id];
+        if (teacherSocket?.id === socket.id) teacherSocket = null;
+        teacherSocket?.emit("student-list", Object.keys(students));
+    });
+});
+
+server.listen(3000, () =>
+    console.log("Server running on http://localhost:3000")
+);

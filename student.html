@@ -2,148 +2,74 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Student Dashboard - Lingro Academy</title>
+<title>Lingro Academy – Student</title>
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
 <style>
-body{background:linear-gradient(135deg,#1540A6 0%,#3C6EFA 60%,#D4AF37 100%);font-family:'Inter',sans-serif;color:#fff;min-height:100vh;}
-.lesson-card{background:rgba(255,255,255,0.15);cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;}
-.lesson-card:hover{transform:translateY(-5px);box-shadow:0 8px 20px rgba(0,0,0,0.3);}
-video{width:100%;border-radius:15px;margin-top:10px;}
-.navbar{background-color:rgba(0,0,0,0.4);}
-h2,h3{text-shadow:1px 1px 3px rgba(0,0,0,0.5);}
-#incomingCallPopup{
-    position: fixed; top: 20px; right: 20px;
-    background-color: #1540A6; color: #fff;
-    padding: 20px; border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    display: none; z-index: 1000;
+body{
+background:linear-gradient(135deg,#1540A6,#3C6EFA,#D4AF37);
+color:#fff;
+font-family:Inter,sans-serif
 }
-#incomingCallPopup button{margin-top: 10px;}
+video{width:100%;border-radius:15px}
 </style>
 </head>
-<body>
 
-<nav class="navbar navbar-dark px-4 d-flex align-items-center">
-<img src="images/lingroLogo.png" alt="Lingro Academy Logo" style="height:170px;margin-right:15px;">
-<span class="navbar-brand">Lingro Academy - Student Dashboard</span>
-<button class="btn btn-light ms-auto" onclick="logout()">Logout</button>
-</nav>
+<body class="p-4">
 
-<div class="container text-center mt-5">
-<h2 class="mb-4">Welcome, <span id="studentName"></span></h2>
+<h2>Lingro Academy – Student Dashboard</h2>
 
-<!-- Register Call ID -->
-<div class="mb-4">
-    <input type="text" id="studentCallIdInput" placeholder="Enter Call ID from Teacher" class="form-control w-50 d-inline">
-    <button class="btn btn-info ms-2" onclick="registerCallId()">Register Call ID</button>
+<div class="mb-3">
+<input id="studentId" class="form-control" placeholder="Student ID">
+<button class="btn btn-success mt-2" onclick="initStudent()">Register</button>
 </div>
 
-<h3 class="mb-4">Self-Study Lessons</h3>
-<div class="row justify-content-center g-4">
-<div class="col-md-3"><div class="card lesson-card p-3" onclick="previewLesson('lessons/lesson1.html')"><h5>Lesson 1</h5><p>Basic English</p></div></div>
-<div class="col-md-3"><div class="card lesson-card p-3" onclick="previewLesson('lessons/lesson2.html')"><h5>Lesson 2</h5><p>Grammar Training</p></div></div>
-<div class="col-md-3"><div class="card lesson-card p-3" onclick="previewLesson('lessons/lesson3.html')"><h5>Lesson 3</h5><p>Vocabulary</p></div></div>
+<div class="row text-center">
+<div class="col-md-4">
+<h5>Student</h5>
+<video id="studentVideo" autoplay muted></video>
 </div>
-
-<div class="row mt-5 text-center">
-<div class="col-md-6"><h4>Student Camera</h4><video id="studentVideo" autoplay muted playsinline></video><button class="btn btn-warning mt-2" id="muteBtn">Mute</button></div>
-<div class="col-md-6"><h4>Teacher Camera</h4><video id="teacherVideo" autoplay playsinline></video></div>
-<div class="col-md-12 mt-4"><h4>Shared Lesson</h4><video id="lessonVideo" autoplay playsinline></video></div>
+<div class="col-md-4">
+<h5>Teacher</h5>
+<video id="teacherVideo" autoplay></video>
+</div>
+<div class="col-md-4">
+<h5>Lesson</h5>
+<video id="lessonVideo" autoplay></video>
 </div>
 </div>
 
-<!-- Incoming Call Popup -->
-<div id="incomingCallPopup">
-    <div><strong id="incomingCallText"></strong></div>
-    <button class="btn btn-success" id="joinCallBtn">Join Call</button>
-</div>
-
-<div class="modal fade" id="lessonModal" tabindex="-1">
-<div class="modal-dialog modal-lg modal-dialog-centered">
-<div class="modal-content">
-<div class="modal-header bg-primary text-warning"><h5 class="modal-title">Lesson Preview</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-<div class="modal-body"><iframe id="previewIframe" style="width:100%; height:400px; border:none;"></iframe></div>
-<div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
-</div>
-</div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
-const student = JSON.parse(localStorage.getItem("loggedInStudent"));
-if(student) document.getElementById("studentName").innerText = student.name;
+let peer;
+let localStream;
 
-function previewLesson(url){document.getElementById("previewIframe").src=url;new bootstrap.Modal(document.getElementById("lessonModal")).show();}
-function logout(){localStorage.removeItem("loggedInStudent");window.location.href="index.html";}
+const studentVideo = document.getElementById("studentVideo");
+const teacherVideo = document.getElementById("teacherVideo");
+const lessonVideo  = document.getElementById("lessonVideo");
 
-const socket = io('http://localhost:3000');
-socket.emit('register-student');
+navigator.mediaDevices.getUserMedia({video:true,audio:true})
+.then(stream=>{
+localStream = stream;
+studentVideo.srcObject = stream;
+});
 
-let localStream, peerConnection;
-const config={iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
-const studentVideo=document.getElementById("studentVideo");
-const teacherVideo=document.getElementById("teacherVideo");
-const muteBtn=document.getElementById("muteBtn");
-const incomingCallPopup=document.getElementById("incomingCallPopup");
-const joinCallBtn=document.getElementById("joinCallBtn");
-const incomingCallText=document.getElementById("incomingCallText");
+function initStudent(){
+peer = new Peer(studentId.value.trim());
 
-let registeredCallId = "";
-
-/* Register the call ID that student will listen for */
-function registerCallId(){
-    const inputId = document.getElementById("studentCallIdInput").value.trim();
-    if(!inputId) return alert("Enter the Call ID from the teacher");
-    registeredCallId = inputId;
-    socket.emit('register-call-id', registeredCallId);
-    alert("Call ID registered: " + registeredCallId);
+peer.on("call", call => {
+call.answer(localStream);
+call.on("stream", stream => {
+if(!teacherVideo.srcObject){
+teacherVideo.srcObject = stream;
+}else{
+lessonVideo.srcObject = stream;
 }
-
-/* Handle incoming call from teacher for matching ID */
-socket.on('incoming-call', (callId) => {
-    if(callId === registeredCallId){
-        incomingCallText.innerText = `Incoming call. Call ID: ${callId}`;
-        incomingCallPopup.style.display = 'block';
-    }
 });
-
-joinCallBtn.onclick = async () => {
-    incomingCallPopup.style.display = 'none';
-    localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-    studentVideo.srcObject = localStream;
-
-    peerConnection = new RTCPeerConnection(config);
-    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-    peerConnection.ontrack = e => teacherVideo.srcObject = e.streams[0];
-    peerConnection.onicecandidate = e => { if(e.candidate) socket.emit('ice-candidate', e.candidate); };
-
-    socket.emit('answer-call', registeredCallId);
-};
-
-/* ---------- WebRTC offer/answer ---------- */
-socket.on('offer', async offer => {
-    if(!peerConnection){
-        localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-        studentVideo.srcObject = localStream;
-        peerConnection = new RTCPeerConnection(config);
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-        peerConnection.ontrack = e => teacherVideo.srcObject = e.streams[0];
-        peerConnection.onicecandidate = e => { if(e.candidate) socket.emit('ice-candidate', e.candidate); };
-    }
-    await peerConnection.setRemoteDescription(offer);
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-    socket.emit('answer', answer);
 });
-
-socket.on('ice-candidate', async candidate => { if(peerConnection) await peerConnection.addIceCandidate(candidate); });
-socket.on('share-lesson', lesson => document.getElementById("lessonVideo").src = lesson);
-
-muteBtn.onclick = () => {
-    if(localStream) localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
-    muteBtn.innerText = localStream.getAudioTracks()[0].enabled ? "Mute" : "Unmute";
-};
+}
 </script>
+
 </body>
 </html>

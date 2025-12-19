@@ -2,157 +2,170 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Teacher Dashboard - Lingro Academy</title>
+<title>Lingro Academy – Teacher</title>
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
 <style>
-body { background: linear-gradient(135deg,#1540A6 0%,#3C6EFA 60%,#D4AF37 100%); font-family:'Inter',sans-serif; color:#fff; min-height:100vh;}
-.lesson-card { background: rgba(255,255,255,0.15); cursor:pointer; transition: transform 0.2s, box-shadow 0.2s; }
-.lesson-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
-.navbar { background-color: rgba(0,0,0,0.4); }
-h2,h3 { text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
-video { width:100%; border-radius:15px; margin-top:10px; }
+body{
+background:linear-gradient(135deg,#1540A6,#3C6EFA,#D4AF37);
+color:#fff;
+font-family:Inter,sans-serif;
+min-height:100vh
+}
+video{width:100%;border-radius:15px}
+.lesson-card{
+background:rgba(255,255,255,.2);
+padding:20px;
+border-radius:15px;
+cursor:pointer
+}
+.lesson-card:hover{background:rgba(255,255,255,.35)}
+#lessonContainer{
+background:#fff;
+color:#000;
+border-radius:15px;
+padding:15px;
+height:100%;
+overflow:auto
+}
 </style>
 </head>
-<body class="d-flex flex-column min-vh-100">
 
-<nav class="navbar navbar-dark px-4 d-flex align-items-center">
-<img src="images/lingroLogo.png" alt="Lingro Academy Logo" style="height:170px; margin-right:15px;">
-<span class="navbar-brand">Lingro Academy - Teacher Dashboard</span>
-<button class="btn btn-light ms-auto" onclick="logout()">Logout</button>
-</nav>
+<body class="p-4">
 
-<div class="container text-center mt-5">
-<h2 class="mb-4">Teaching Tools</h2>
-<button class="btn btn-primary btn-lg mb-3" onclick="startCall()">Start Lesson & Video Call</button>
+<h2>Lingro Academy – Teacher Dashboard</h2>
 
-<!-- Call Student Section -->
-<div class="mb-4">
-    <button class="btn btn-info" onclick="generateCallId()">Generate Call ID</button>
-    <span id="generatedCallId" class="fw-bold ms-2"></span>
-    <button class="btn btn-success ms-3" onclick="callStudent()">Call Student</button>
-</div>
-
-<h3 class="mb-4">Lesson Materials</h3>
-<div class="row justify-content-center g-4">
-<div class="col-md-3"><div class="card lesson-card p-3" onclick="previewLesson('lessons/lesson1.html')"><h5>Lesson 1</h5><p>Basic English</p></div></div>
-<div class="col-md-3"><div class="card lesson-card p-3" onclick="previewLesson('lessons/lesson2.html')"><h5>Lesson 2</h5><p>Grammar Training</p></div></div>
-<div class="col-md-3"><div class="card lesson-card p-3" onclick="previewLesson('lessons/lesson3.html')"><h5>Lesson 3</h5><p>Vocabulary</p></div></div>
-</div>
-
-<div class="row mt-5 text-center">
+<!-- IDs -->
+<div class="row mb-3">
 <div class="col-md-4">
-<h4>Teacher Camera</h4>
+<input id="teacherId" class="form-control" placeholder="Teacher ID">
+<button class="btn btn-success mt-2 w-100" onclick="initTeacher()">Set ID</button>
+</div>
+<div class="col-md-4">
+<input id="studentId" class="form-control" placeholder="Student ID">
+<button class="btn btn-primary mt-2 w-100" onclick="callStudent()">Call Student</button>
+</div>
+<div class="col-md-4">
+<button class="btn btn-warning mt-4 w-100" onclick="shareLessonScreen()">Share Screen</button>
+</div>
+</div>
+
+<!-- 3 Screens -->
+<div class="row text-center">
+<div class="col-md-4">
+<h5>Teacher Camera</h5>
 <video id="teacherVideo" autoplay muted playsinline></video>
-<div class="mt-2">
-<button class="btn btn-warning" id="muteBtn">Mute</button>
-<button class="btn btn-danger" id="endCallBtn">End Call</button>
-</div>
 </div>
 <div class="col-md-4">
-<h4>Student Camera</h4>
+<h5>Student Camera</h5>
 <video id="studentVideo" autoplay playsinline></video>
 </div>
 <div class="col-md-4">
-<h4>Shared Lesson</h4>
-<video id="lessonVideo" autoplay playsinline></video>
+<h5>Lesson Screen</h5>
+<div id="lessonContainer">
+<p>Select a lesson to start teaching</p>
 </div>
 </div>
 </div>
 
-<div class="modal fade" id="lessonModal" tabindex="-1">
-<div class="modal-dialog modal-lg modal-dialog-centered">
-<div class="modal-content">
-<div class="modal-header bg-primary text-warning">
-<h5 class="modal-title">Lesson Preview</h5>
-<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<hr>
+
+<!-- Lesson Cards -->
+<h4 class="mt-4">Lessons</h4>
+<div class="row g-3">
+<div class="col-md-3">
+<div class="lesson-card" onclick="loadLesson('lesson1')">
+<h5>Lesson 1</h5>
+<p>Basic English</p>
 </div>
-<div class="modal-body"><iframe id="previewIframe" style="width:100%; height:400px; border:none;"></iframe></div>
-<div class="modal-footer">
-<button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-<button class="btn btn-success" onclick="shareLesson()">Share Lesson</button>
 </div>
+<div class="col-md-3">
+<div class="lesson-card" onclick="loadLesson('lesson2')">
+<h5>Lesson 2</h5>
+<p>Grammar</p>
+</div>
+</div>
+<div class="col-md-3">
+<div class="lesson-card" onclick="loadLesson('lesson3')">
+<h5>Lesson 3</h5>
+<p>Vocabulary</p>
 </div>
 </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
-const socket = io('http://localhost:3000');
-let localStream, peerConnection;
-const config = { iceServers:[{ urls:"stun:stun.l.google.com:19302" }] };
-const teacherVideo=document.getElementById("teacherVideo");
-const studentVideo=document.getElementById("studentVideo");
-const muteBtn=document.getElementById("muteBtn");
-const endCallBtn=document.getElementById("endCallBtn");
+let peer;
+let cameraCall;
+let screenCall;
+let localStream;
 
-let currentCallId = "";
+const teacherVideo = document.getElementById("teacherVideo");
+const studentVideo = document.getElementById("studentVideo");
+const lessonContainer = document.getElementById("lessonContainer");
 
-/* ---------- LESSON LOGIC ---------- */
-function previewLesson(url){
-    document.getElementById("previewIframe").src=url;
-    localStorage.setItem("lessonToShare", url);
-    new bootstrap.Modal(document.getElementById("lessonModal")).show();
-}
+navigator.mediaDevices.getUserMedia({video:true,audio:true})
+.then(stream=>{
+localStream = stream;
+teacherVideo.srcObject = stream;
+});
 
-function shareLesson(){
-    const lesson = localStorage.getItem("lessonToShare");
-    if(!lesson) return alert("No lesson selected");
-    localStorage.setItem("lessonToOpen", lesson);
-    socket.emit('share-lesson', lesson);
-    alert("Lesson shared with students");
-    bootstrap.Modal.getInstance(document.getElementById("lessonModal")).hide();
-    document.getElementById("lessonVideo").src = lesson;
-}
+function initTeacher(){
+peer = new Peer(teacherId.value.trim());
 
-function logout(){ window.location.href="index.html"; }
-
-/* ---------- WEBRTC ---------- */
-async function startCall(){
-    localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
-    teacherVideo.srcObject = localStream;
-
-    peerConnection = new RTCPeerConnection(config);
-    localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
-    peerConnection.ontrack = e => studentVideo.srcObject = e.streams[0];
-    peerConnection.onicecandidate = e => { if(e.candidate) socket.emit('ice-candidate', e.candidate); };
-
-    socket.emit('call-start');
-
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
-    socket.emit('offer', offer);
-}
-
-socket.on('answer', async answer => { if(peerConnection) await peerConnection.setRemoteDescription(answer); });
-socket.on('ice-candidate', async candidate => { if(peerConnection) await peerConnection.addIceCandidate(candidate); });
-
-muteBtn.onclick = () => {
-    localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
-    muteBtn.innerText = localStream.getAudioTracks()[0].enabled ? "Mute" : "Unmute";
-};
-
-endCallBtn.onclick = () => {
-    localStream.getTracks().forEach(t => t.stop());
-    peerConnection.close();
-    peerConnection = null;
-    teacherVideo.srcObject = null;
-    studentVideo.srcObject = null;
-};
-
-/* ---------- CALL STUDENT WITH GENERATED ID ---------- */
-function generateCallId(){
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    currentCallId = '';
-    for(let i=0;i<4;i++) currentCallId += chars.charAt(Math.floor(Math.random()*chars.length));
-    document.getElementById('generatedCallId').innerText = currentCallId;
+peer.on("call", call => {
+call.answer(localStream);
+call.on("stream", s => studentVideo.srcObject = s);
+});
 }
 
 function callStudent(){
-    if(!currentCallId) return alert("Generate a Call ID first");
-    socket.emit('call-student', currentCallId);
-    alert("Call sent with ID: " + currentCallId);
+cameraCall = peer.call(studentId.value.trim(), localStream);
+cameraCall.on("stream", s => studentVideo.srcObject = s);
+}
+
+function loadLesson(lesson){
+if(lesson === "lesson1"){
+lessonContainer.innerHTML = `
+<h3>Basic English</h3>
+<ul>
+<li>Greetings</li>
+<li>Alphabet</li>
+<li>Simple sentences</li>
+</ul>`;
+}
+if(lesson === "lesson2"){
+lessonContainer.innerHTML = `
+<h3>Grammar</h3>
+<p>Present tense basics</p>`;
+}
+if(lesson === "lesson3"){
+lessonContainer.innerHTML = `
+<h3>Vocabulary</h3>
+<p>Common daily words</p>`;
+}
+}
+
+async function shareLessonScreen(){
+if(!cameraCall){
+alert("Start the call first");
+return;
+}
+
+const stream = await navigator.mediaDevices.getDisplayMedia({
+video:true,
+audio:false
+});
+
+/* Teacher selects THIS TAB */
+screenCall = peer.call(studentId.value.trim(), stream);
+
+stream.getVideoTracks()[0].onended = ()=>{
+screenCall.close();
+};
 }
 </script>
+
 </body>
 </html>
