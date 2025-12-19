@@ -2,72 +2,88 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Student Dashboard</title>
+<title>Lingro Academy – Student</title>
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
 <style>
-body{background:linear-gradient(135deg,#1540A6,#3C6EFA,#D4AF37);color:#fff}
-video,iframe{width:100%;border-radius:15px}
-#popup{position:fixed;top:20px;right:20px;background:#1540A6;padding:20px;display:none}
+body{
+  background:linear-gradient(135deg,#1540A6,#3C6EFA,#D4AF37);
+  color:#fff;
+  font-family:Inter,sans-serif;
+  min-height:100vh;
+}
+.logo{max-width:160px;margin-bottom:15px;}
+video{width:100%;border-radius:15px;}
+.lesson-card{
+  background:rgba(255,255,255,.2);
+  padding:20px;
+  border-radius:15px;
+}
+#lessonContainer{
+  background:#fff;
+  color:#000;
+  border-radius:15px;
+  padding:15px;
+  height:100%;
+}
 </style>
 </head>
-<body>
 
-<div class="container mt-4 text-center">
-<h2>Student Dashboard</h2>
+<body class="p-4">
 
-<div id="popup">
-<p>Incoming Call</p>
-<button class="btn btn-success" onclick="answer()">Answer</button>
-</div>
+<img src="logo.png" class="logo" alt="Lingro Academy Logo">
+<h2>Lingro Academy – Student</h2>
 
-<div class="row mt-4">
-<div class="col-md-4">
-<h5>Student</h5>
-<video id="studentVideo" autoplay muted></video>
-</div>
-<div class="col-md-4">
-<h5>Teacher</h5>
-<video id="teacherVideo" autoplay></video>
-</div>
-<div class="col-md-4">
-<h5>Lesson</h5>
-<iframe id="lessonFrame"></iframe>
-</div>
-</div>
+<input id="studentId" class="form-control mb-2" placeholder="Student ID">
+<button class="btn btn-success w-100 mb-3" onclick="initStudent()">Register</button>
+
+<div class="row text-center">
+  <div class="col-md-6">
+    <h5>Teacher Camera</h5>
+    <video id="teacherVideo" autoplay playsinline></video>
+  </div>
+  <div class="col-md-6">
+    <h5>Lesson Screen</h5>
+    <div id="lessonContainer"><p>Waiting for lesson…</p></div>
+  </div>
 </div>
 
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<hr>
+<h4>Self-Study Lessons</h4>
+
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="lesson-card">
+      <h5>Lesson 1</h5><p>Practice basics</p>
+    </div>
+  </div>
+</div>
+
 <script>
-const socket = io("http://localhost:3000");
-socket.emit("register-student");
+let peer;
+const teacherVideo = document.getElementById("teacherVideo");
+const lessonContainer = document.getElementById("lessonContainer");
 
-let pc, stream;
+function initStudent(){
+  const id = document.getElementById("studentId").value.trim();
+  peer = new Peer(id);
 
-socket.on("incoming-call", () => {
-    document.getElementById("popup").style.display = "block";
-});
+  peer.on("call", call=>{
+    call.answer();
+    call.on("stream", s=>teacherVideo.srcObject=s);
+  });
 
-async function answer(){
-    document.getElementById("popup").style.display = "none";
-
-    stream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-    studentVideo.srcObject = stream;
-
-    pc = new RTCPeerConnection();
-    stream.getTracks().forEach(t => pc.addTrack(t, stream));
-    pc.ontrack = e => teacherVideo.srcObject = e.streams[0];
-    pc.onicecandidate = e => e.candidate && socket.emit("ice-candidate", e.candidate);
+  peer.on("connection", conn=>{
+    conn.on("data", data=>{
+      if(data.type==="lesson"){
+        lessonContainer.innerHTML = data.html;
+      }
+    });
+  });
 }
-
-socket.on("offer", async offer => {
-    await pc.setRemoteDescription(offer);
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    socket.emit("answer", answer);
-});
-
-socket.on("ice-candidate", c => pc.addIceCandidate(c));
-socket.on("share-lesson", l => lessonFrame.src = l);
 </script>
+
 </body>
 </html>
