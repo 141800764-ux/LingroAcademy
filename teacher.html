@@ -40,13 +40,21 @@ video{
   height:100%;
   overflow:auto;
 }
+.logout-btn{
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
 </style>
 </head>
 
 <body class="p-4">
+        <button class="btn btn-danger ms-auto" onclick="logout()">Logout</button>
+
 
 <img src="images/lingroLogo.png" class="logo" alt="Lingro Academy Logo">
 <h2 class="text-center mb-4">Lingro Academy – Teacher Dashboard</h2>
+
 
 <div class="row mb-3">
   <div class="col-md-3">
@@ -95,6 +103,11 @@ const teacherVideo = document.getElementById("teacherVideo");
 const studentVideo = document.getElementById("studentVideo");
 const lessonContainer = document.getElementById("lessonContainer");
 
+function logout(){
+    localStorage.removeItem("loggedInAdmin");
+    window.location.href = "index.html";
+}
+
 navigator.mediaDevices.getUserMedia({video:true,audio:true})
 .then(stream=>{
   localStream = stream;
@@ -120,6 +133,7 @@ function initTeacher(){
     lessonConn = conn;
     lessonConn.on("data", data=>{ /* Not needed on teacher side */ });
   });
+
 }
 
 function callStudent(){
