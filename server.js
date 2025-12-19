@@ -28,7 +28,7 @@ io.on("connection", socket => {
 
     socket.on("call-student", studentId => {
         if (students[studentId]) {
-            students[studentId].emit("incoming-call");
+            students[studentId].emit("incoming-call", socket.id);
         }
     });
 
@@ -37,9 +37,7 @@ io.on("connection", socket => {
     socket.on("ice-candidate", c => socket.broadcast.emit("ice-candidate", c));
 
     socket.on("share-lesson", lesson => {
-        Object.values(students).forEach(s =>
-            s.emit("share-lesson", lesson)
-        );
+        Object.values(students).forEach(s => s.emit("share-lesson", lesson));
     });
 
     socket.on("disconnect", () => {
