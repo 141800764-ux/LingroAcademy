@@ -3,10 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Lingro Academy – Teacher</title>
-
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
 <style>
 body{
   background:linear-gradient(135deg,#1540A6,#3C6EFA,#D4AF37);
@@ -15,9 +13,9 @@ body{
   min-height:100vh;
 }
 .logo{
+  display:block;
+  margin:0 auto 15px auto;
   max-width:160px;
-  margin-bottom:15px;
-  margin-left: 40%;
 }
 video{
   width:100%;
@@ -47,24 +45,21 @@ video{
 
 <body class="p-4">
 
-<img src="images/LingroAcademyLogo1.png" class="logo" alt="Lingro Academy Logo">
-<h2>Lingro Academy – Teacher Dashboard</h2>
+<img src="images/lingroLogo.png" class="logo" alt="Lingro Academy Logo">
+<h2 class="text-center mb-4">Lingro Academy – Teacher Dashboard</h2>
 
 <div class="row mb-3">
   <div class="col-md-3">
     <input id="teacherId" class="form-control" placeholder="Teacher ID">
     <button class="btn btn-success mt-2 w-100" onclick="initTeacher()">Set ID</button>
   </div>
-
   <div class="col-md-3">
     <input id="studentId" class="form-control" placeholder="Student ID">
     <button id="callBtn" class="btn btn-primary mt-2 w-100" onclick="callStudent()" disabled>Call Student</button>
   </div>
-
   <div class="col-md-3">
     <button class="btn btn-warning mt-2 w-100" onclick="shareLesson()">Share Lesson</button>
   </div>
-
   <div class="col-md-3">
     <button class="btn btn-danger mt-2 w-100" onclick="endCall()">End Call</button>
   </div>
@@ -72,15 +67,13 @@ video{
 
 <div class="row text-center">
   <div class="col-md-4">
-    <h5>Teacher Camera</h5>
+    <h5>Teacher Camera (You)</h5>
     <video id="teacherVideo" autoplay muted playsinline></video>
   </div>
-
   <div class="col-md-4">
     <h5>Student Camera</h5>
     <video id="studentVideo" autoplay playsinline></video>
   </div>
-
   <div class="col-md-4">
     <h5>Lesson Screen</h5>
     <div id="lessonContainer"><p>Select a lesson to start teaching</p></div>
@@ -89,27 +82,14 @@ video{
 
 <hr>
 <h4>Lessons</h4>
-
 <div class="row g-3">
-  <div class="col-md-3">
-    <div class="lesson-card" onclick="loadLesson('l1')">
-      <h5>Lesson 1</h5><p>Basic English</p>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="lesson-card" onclick="loadLesson('l2')">
-      <h5>Lesson 2</h5><p>Grammar</p>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="lesson-card" onclick="loadLesson('l3')">
-      <h5>Lesson 3</h5><p>Vocabulary</p>
-    </div>
-  </div>
+  <div class="col-md-3"><div class="lesson-card" onclick="loadLesson('l1')"><h5>Lesson 1</h5><p>Basic English</p></div></div>
+  <div class="col-md-3"><div class="lesson-card" onclick="loadLesson('l2')"><h5>Lesson 2</h5><p>Grammar</p></div></div>
+  <div class="col-md-3"><div class="lesson-card" onclick="loadLesson('l3')"><h5>Lesson 3</h5><p>Vocabulary</p></div></div>
 </div>
 
 <script>
-let peer, cameraCall, lessonConn, localStream, currentLessonHTML = "";
+let peer, localStream, cameraCall, lessonConn, currentLessonHTML="";
 
 const teacherVideo = document.getElementById("teacherVideo");
 const studentVideo = document.getElementById("studentVideo");
@@ -119,57 +99,55 @@ navigator.mediaDevices.getUserMedia({video:true,audio:true})
 .then(stream=>{
   localStream = stream;
   teacherVideo.srcObject = stream;
-});
+})
+.catch(err=>alert("Camera error: "+err));
 
 function initTeacher(){
   const id = document.getElementById("teacherId").value.trim();
-  if(!id){alert("Enter Teacher ID");return;}
+  if(!id){ alert("Enter Teacher ID"); return; }
 
   peer = new Peer(id);
 
-  peer.on("open", ()=>{
-    document.getElementById("callBtn").disabled = false;
-  });
+  peer.on("open", ()=>{ document.getElementById("callBtn").disabled = false; });
 
   peer.on("call", call=>{
     cameraCall = call;
     call.answer(localStream);
-    call.on("stream", s=>studentVideo.srcObject=s);
+    call.on("stream", s=>studentVideo.srcObject = s);
+  });
+
+  peer.on("connection", conn=>{
+    lessonConn = conn;
+    lessonConn.on("data", data=>{ /* Not needed on teacher side */ });
   });
 }
 
 function callStudent(){
   const sid = document.getElementById("studentId").value.trim();
-  cameraCall = peer.call(sid, localStream);
-  cameraCall.on("stream", s=>studentVideo.srcObject=s);
+  if(!sid){ alert("Enter Student ID"); return; }
 
+  // Send teacher camera
+  cameraCall = peer.call(sid, localStream);
+  cameraCall.on("stream", s=>studentVideo.srcObject = s);
+
+  // Connect for lesson sharing
   lessonConn = peer.connect(sid);
-  lessonConn.on("open", ()=>{
-    if(currentLessonHTML) sendLesson();
-  });
+  lessonConn.on("open", ()=>{ if(currentLessonHTML) sendLesson(); });
+
+  // Ask student to send their camera
+  const studentStreamConn = peer.call(sid, null); // null stream triggers student to send theirs
 }
 
 function loadLesson(l){
   if(l==="l1") currentLessonHTML="<h3>Basic English</h3><ul><li>Greetings</li><li>Alphabet</li></ul>";
   if(l==="l2") currentLessonHTML="<h3>Grammar</h3><p>Present tense basics</p>";
   if(l==="l3") currentLessonHTML="<h3>Vocabulary</h3><p>Daily words</p>";
-
   lessonContainer.innerHTML = currentLessonHTML;
 }
 
-function shareLesson(){
-  if(!lessonConn || !lessonConn.open){ alert("Student not connected"); return; }
-  sendLesson();
-}
-
-function sendLesson(){
-  lessonConn.send({type:"lesson", html:currentLessonHTML});
-}
-
-function endCall(){
-  if(cameraCall){cameraCall.close();cameraCall=null;}
-}
+function shareLesson(){ if(!lessonConn || !lessonConn.open){ alert("Student not connected"); return; } sendLesson(); }
+function sendLesson(){ lessonConn.send({type:"lesson", html:currentLessonHTML}); }
+function endCall(){ if(cameraCall){cameraCall.close(); cameraCall=null;} }
 </script>
-
 </body>
 </html>

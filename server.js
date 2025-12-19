@@ -9,7 +9,6 @@ const io = new Server(server, { cors: { origin: "*" } });
 // Serve static files (teacher.html, student.html, etc.)
 app.use(express.static(__dirname));
 
-// Keep track of teacher and students
 let teacherSocket = null;
 let students = {}; // socketId → socket
 
@@ -32,23 +31,6 @@ io.on("connection", socket => {
         }
     });
 
-    // Teacher calls a student
-    socket.on("call-student", studentId => {
-        if (students[studentId]) {
-            students[studentId].emit("incoming-call", socket.id);
-        }
-    });
-
-    // WebRTC signaling (offer/answer/ICE)
-    socket.on("offer", data => socket.broadcast.emit("offer", data));
-    socket.on("answer", data => teacherSocket?.emit("answer", data));
-    socket.on("ice-candidate", candidate => socket.broadcast.emit("ice-candidate", candidate));
-
-    // Teacher shares lesson
-    socket.on("share-lesson", lesson => {
-        Object.values(students).forEach(s => s.emit("share-lesson", lesson));
-    });
-
     // Handle disconnect
     socket.on("disconnect", () => {
         console.log("Disconnected:", socket.id);
@@ -58,6 +40,5 @@ io.on("connection", socket => {
     });
 });
 
-// Start the server
 const PORT = 3000;
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

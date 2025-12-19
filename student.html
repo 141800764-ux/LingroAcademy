@@ -3,10 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Lingro Academy – Student</title>
-
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
 <style>
 body{
   background:linear-gradient(135deg,#1540A6,#3C6EFA,#D4AF37);
@@ -15,80 +13,98 @@ body{
   min-height:100vh;
 }
 .logo{
-    max-width:160px;
-    margin-bottom:15px;
-    margin-left: 40%;
+  display:block;
+  margin:0 auto 15px auto;
+  max-width:160px;
 }
-
-video{width:100%;border-radius:15px;}
+video{width:100%;border-radius:15px;margin-bottom:10px;}
 .lesson-card{
   background:rgba(255,255,255,.2);
   padding:20px;
   border-radius:15px;
+  cursor:pointer;
+  transition:.2s;
 }
-#lessonContainer{
+.lesson-card:hover{
+  background:rgba(255,255,255,.35);
+}
+#lessonContainer, #selfStudyContainer{
   background:#fff;
   color:#000;
   border-radius:15px;
   padding:15px;
   height:100%;
+  overflow:auto;
 }
 </style>
 </head>
 
 <body class="p-4">
 
-<img src="images/LingroAcademyLogo1.png" class="logo" alt="Lingro Academy Logo">
-<h2>Lingro Academy – Student</h2>
+<img src="images/lingroLogo.png" class="logo" alt="Lingro Academy Logo">
+<h2 class="text-center mb-4">Lingro Academy – Student</h2>
 
 <input id="studentId" class="form-control mb-2" placeholder="Student ID">
 <button class="btn btn-success w-100 mb-3" onclick="initStudent()">Register</button>
 
 <div class="row text-center">
-  <div class="col-md-6">
+  <div class="col-md-4">
+    <h5>Your Camera</h5>
+    <video id="selfVideo" autoplay muted playsinline></video>
+  </div>
+  <div class="col-md-4">
     <h5>Teacher Camera</h5>
     <video id="teacherVideo" autoplay playsinline></video>
   </div>
-  <div class="col-md-6">
+  <div class="col-md-4">
     <h5>Lesson Screen</h5>
     <div id="lessonContainer"><p>Waiting for lesson…</p></div>
   </div>
 </div>
 
 <hr>
-<h4>Self-Study Lessons</h4>
-
-<div class="row g-3">
-  <div class="col-md-3">
-    <div class="lesson-card">
-      <h5>Lesson 1</h5><p>Practice basics</p>
-    </div>
-  </div>
+<h4>Offline Lessons</h4>
+<div class="row g-3" id="selfStudyContainer">
+  <div class="col-md-3"><div class="lesson-card" onclick="loadLesson('l1')"><h5>Lesson 1</h5><p>Practice basics</p></div></div>
+  <div class="col-md-3"><div class="lesson-card" onclick="loadLesson('l2')"><h5>Lesson 2</h5><p>Grammar practice</p></div></div>
+  <div class="col-md-3"><div class="lesson-card" onclick="loadLesson('l3')"><h5>Lesson 3</h5><p>Vocabulary practice</p></div></div>
 </div>
 
 <script>
-let peer;
+let peer, teacherConn, localStream;
+const selfVideo = document.getElementById("selfVideo");
 const teacherVideo = document.getElementById("teacherVideo");
 const lessonContainer = document.getElementById("lessonContainer");
+const selfStudyContainer = document.getElementById("selfStudyContainer");
+
+navigator.mediaDevices.getUserMedia({video:true,audio:true})
+.then(stream=>{ localStream = stream; selfVideo.srcObject = stream; })
+.catch(err=>alert("Camera error: "+err));
 
 function initStudent(){
   const id = document.getElementById("studentId").value.trim();
+  if(!id){ alert("Enter Student ID"); return; }
+
   peer = new Peer(id);
 
   peer.on("call", call=>{
-    call.answer();
-    call.on("stream", s=>teacherVideo.srcObject=s);
+    call.answer(localStream); // send student's camera
+    call.on("stream", s=>teacherVideo.srcObject = s);
   });
 
   peer.on("connection", conn=>{
-    conn.on("data", data=>{
-      if(data.type==="lesson"){
-        lessonContainer.innerHTML = data.html;
-      }
+    teacherConn = conn;
+    teacherConn.on("data", data=>{
+      if(data.type==="lesson") lessonContainer.innerHTML = data.html;
     });
   });
 }
-</script>
 
+function loadLesson(l){
+  if(l==="l1") selfStudyContainer.innerHTML="<h3>Practice Lesson 1</h3><ul><li>Greetings</li><li>Alphabet</li></ul>";
+  if(l==="l2") selfStudyContainer.innerHTML="<h3>Practice Lesson 2</h3><p>Grammar basics</p>";
+  if(l==="l3") selfStudyContainer.innerHTML="<h3>Practice Lesson 3</h3><p>Vocabulary words</p>";
+}
+</script>
 </body>
 </html>
