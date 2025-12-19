@@ -32,6 +32,9 @@ body {
                 <button class="btn btn-success w-100" type="submit">Sign Up</button>
             </form>
             <p class="text-center mt-3">Already have an account? <a href="index.html">Login</a></p>
+            <p class="text-center mt-3">
+                Have questions? <a href="contact.html" style="color: #FFD700; text-decoration: underline;">Contact Us</a>
+            </p>
         </div>
     </div>
 </div>
@@ -47,7 +50,6 @@ document.getElementById("signupForm").addEventListener("submit", function(e){
         progress: []
     };
 
-    // Check if email already exists
     if(students.some(s => s.email === newStudent.email)){
         alert("Email already registered");
         return;
@@ -56,7 +58,7 @@ document.getElementById("signupForm").addEventListener("submit", function(e){
     students.push(newStudent);
     localStorage.setItem("students", JSON.stringify(students));
     alert("Signup successful!");
-    window.location.href = "index.html"; // Redirect to unified login page
+    window.location.href = "index.html";
 });
 </script>
 </body>

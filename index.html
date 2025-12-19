@@ -30,7 +30,10 @@ body {
                 <input class="form-control mb-3" type="password" placeholder="Password" required id="password">
                 <button class="btn btn-success w-100" type="submit">Login</button>
             </form>
-            <p class="text-center mt-3">Don't have an account? <a href="signup.html">Sign Up</a></p>
+            <p class="text-center mt-3">Don't have an account? <a href="Signup.html">Sign Up</a></p>
+            <p class="text-center mt-3">
+                Have questions? <a href="contact.html" style="color: #FFD700; text-decoration: underline;">Contact Us</a>
+            </p>
         </div>
     </div>
 </div>
@@ -41,7 +44,6 @@ document.getElementById("loginForm").addEventListener("submit", function(e){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    // Check admins first (teachers are treated as admins)
     const admins = JSON.parse(localStorage.getItem("admins")) || [];
     const admin = admins.find(a => a.email === email && a.password === password);
     if(admin){
@@ -50,7 +52,6 @@ document.getElementById("loginForm").addEventListener("submit", function(e){
         return;
     }
 
-    // Check students
     const students = JSON.parse(localStorage.getItem("students")) || [];
     const student = students.find(s => s.email === email && s.password === password);
     if(student){
