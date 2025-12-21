@@ -2,125 +2,240 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Contact Us - Lingro Academy</title>
+<title>Lingro Academy – Teacher</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
 <style>
-body {
-    background: linear-gradient(135deg, #1540A6 0%, #3C6EFA 60%, #D4AF37 100%);
-    color: #fff;
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
+body{
+  background:linear-gradient(135deg,#1540A6,#3C6EFA,#D4AF37);
+  color:#fff;
+  font-family:Inter,sans-serif;
+  min-height:100vh;
 }
-.container {
-    max-width: 700px;
-    margin-top: 50px;
+.logo{
+  display:block;
+  margin:0 auto 15px auto;
+  max-width:160px;
 }
-.logo {
-    display: block;
-    margin: 0 auto 15px auto;
-    max-width: 160px;
+video{
+  width:100%;
+  border-radius:15px;
+  margin-bottom:10px;
 }
-.btn-signup {
-    background-color: #FFC700;
-    color: #000;
-    font-weight: bold;
-    margin-bottom: 25px;
-    transition: 0.3s;
+.lesson-card{
+  background:rgba(255,255,255,.2);
+  padding:15px;
+  border-radius:15px;
+  cursor:pointer;
+  transition:.2s;
+  text-align:center;
 }
-.btn-signup:hover {
-    background-color: #D4AF37;
-    color: #000;
+.lesson-card img{
+  width:100%;
+  border-radius:10px;
+  margin-bottom:10px;
 }
-.card {
-    background: rgba(255, 255, 255, 0.15);
-    padding: 30px;
-    border-radius: 15px;
-    text-align: center;
+.lesson-card:hover{
+  background:rgba(255,255,255,.35);
 }
-.card h2 {
-    margin-bottom: 20px;
+#lessonContainer{
+  background:#fff;
+  color:#000;
+  border-radius:15px;
+  padding:15px;
+  height:100%;
+  min-height:70vh;
+  overflow:auto;
 }
-.btn-contact {
-    background-color: #D4AF37;
-    border: none;
-    color: #000;
-    font-weight: bold;
-    transition: 0.3s;
+.slide-controls{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
 }
-.btn-contact:hover {
-    background-color: #FFC700;
-    color: #000;
-}
-.contact-info p {
-    font-size: 1.1rem;
-    margin: 10px 0;
-}
-.form-control {
-    margin-bottom: 15px;
-}
-#successMessage {
-    display: none;
-    color: #00ff00;
-    font-weight: bold;
-    margin-top: 15px;
+.logout-btn{
+  position:absolute;
+  top:20px;
+  right:20px;
 }
 </style>
 </head>
-<body>
 
-<div class="container text-center">
-    <img src="images/lingroLogo.png" alt="Lingro Academy Logo" class="logo">
-    
-    <!-- Signup button -->
-    <a href="Signup.html" class="btn btn-signup btn-lg w-50">Sign Up</a>
-    
-    <div class="card">
-        <h2>Contact Us</h2>
-        <div class="contact-info">
-            <p><strong>Phone:</strong> 074 885 3333</p>
-            <p><strong>Email:</strong> <a href="mailto:lingroacademy@gmail.com" style="color: #fff; text-decoration: underline;">lingroacademy@gmail.com</a></p>
-        </div>
+<body class="p-4">
 
-        <form id="contactForm">
-            <input type="text" id="name" class="form-control" placeholder="Your Name" required>
-            <input type="email" id="email" class="form-control" placeholder="Your Email" required>
-            <input type="text" id="phone" class="form-control" placeholder="Your Phone">
-            <textarea id="message" class="form-control" placeholder="Your Message" rows="4" required></textarea>
-            <button type="submit" class="btn btn-contact btn-lg w-100">Send Message</button>
-        </form>
+<button class="btn btn-danger logout-btn" onclick="logout()">Logout</button>
 
-        <p id="successMessage">Message sent! Thank you for contacting us.</p>
+<img src="images/lingroLogo.png" class="logo" alt="Lingro Academy Logo">
+<h2 class="text-center mb-4">Lingro Academy – Teacher Dashboard</h2>
+
+<div class="row mb-3">
+  <div class="col-md-3">
+    <input id="teacherId" class="form-control" placeholder="Teacher ID">
+    <button class="btn btn-success mt-2 w-100" onclick="initTeacher()">Set ID</button>
+  </div>
+  <div class="col-md-3">
+    <input id="studentId" class="form-control" placeholder="Student ID">
+    <button id="callBtn" class="btn btn-primary mt-2 w-100" onclick="callStudent()" disabled>Call Student</button>
+  </div>
+  <div class="col-md-3">
+    <button class="btn btn-warning mt-2 w-100" onclick="shareLesson()">Share Lesson</button>
+  </div>
+  <div class="col-md-3">
+    <button class="btn btn-danger mt-2 w-100" onclick="endCall()">End Call</button>
+  </div>
+</div>
+
+<!-- ✅ NEW SCREEN STRUCTURE -->
+<div class="row">
+  <div class="col-md-4 text-center">
+    <h5>Teacher Camera (You)</h5>
+    <video id="teacherVideo" autoplay muted playsinline></video>
+
+    <h5 class="mt-3">Student Camera</h5>
+    <video id="studentVideo" autoplay playsinline></video>
+  </div>
+
+  <div class="col-md-8 text-center">
+    <h5>Lesson Screen</h5>
+    <div id="lessonContainer">
+      <p>Select a lesson to start teaching</p>
     </div>
+
+    <div class="slide-controls">
+      <button class="btn btn-secondary w-50" onclick="prevSlide()">⬅ Prev</button>
+      <button class="btn btn-secondary w-50" onclick="nextSlide()">Next ➡</button>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h4>Lessons</h4>
+
+<select id="courseSelect" class="form-select mb-3">
+  <option value="kids">Kids (7–15)</option>
+  <option value="adults">Adults</option>
+</select>
+
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="lesson-card" onclick="loadLesson(1)">
+      <img src="images/brainstorm1.jpeg">
+      <h5>Lesson 1</h5>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="lesson-card" onclick="loadLesson(2)">
+      <img src="images/grammar.jpeg">
+      <h5>Lesson 2</h5>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="lesson-card" onclick="loadLesson(3)">
+      <img src="images/vocabulary.jpeg">
+      <h5>Lesson 3</h5>
+    </div>
+  </div>
 </div>
 
 <script>
-document.getElementById("contactForm").addEventListener("submit", function(e){
-    e.preventDefault();
+let peer, localStream, cameraCall, lessonConn;
+let lesson=null, slideIndex=0;
 
-    const name = document.getElementById("name").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const phone = document.getElementById("phone").value.trim();
-    const message = document.getElementById("message").value.trim();
+const teacherVideo=document.getElementById("teacherVideo");
+const studentVideo=document.getElementById("studentVideo");
+const lessonContainer=document.getElementById("lessonContainer");
 
-    if(!name || !email || !message){
-        alert("Please fill in all required fields.");
-        return;
-    }
+function logout(){
+  localStorage.removeItem("loggedInAdmin");
+  window.location.href="index.html";
+}
 
-    // Create mailto link
-    const subject = encodeURIComponent("Contact Form Message from Lingro Academy Website");
-    const body = encodeURIComponent(
-        `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\n\nMessage:\n${message}`
-    );
-
-    window.location.href = `mailto:lingroacademy@gmail.com?subject=${subject}&body=${body}`;
-
-    // Show confirmation
-    document.getElementById("successMessage").style.display = "block";
-
-    // Reset form
-    document.getElementById("contactForm").reset();
+navigator.mediaDevices.getUserMedia({video:true,audio:true})
+.then(stream=>{
+  localStream=stream;
+  teacherVideo.srcObject=stream;
 });
+
+function initTeacher(){
+  const id=document.getElementById("teacherId").value.trim();
+  if(!id){alert("Enter Teacher ID");return;}
+  peer=new Peer(id);
+  peer.on("open",()=>document.getElementById("callBtn").disabled=false);
+  peer.on("call",call=>{
+    cameraCall=call;
+    call.answer(localStream);
+    call.on("stream",s=>studentVideo.srcObject=s);
+  });
+  peer.on("connection",conn=>lessonConn=conn);
+}
+
+function callStudent(){
+  const sid=document.getElementById("studentId").value.trim();
+  if(!sid){alert("Enter Student ID");return;}
+  cameraCall=peer.call(sid,localStream);
+  cameraCall.on("stream",s=>studentVideo.srcObject=s);
+  lessonConn=peer.connect(sid);
+}
+
+function loadLesson(num){
+  const course=document.getElementById("courseSelect").value;
+  const data=JSON.parse(localStorage.getItem("lingro_courses")||"{}");
+
+  if(!data[course]||!data[course]["l"+num]){
+    alert("No lesson content found");
+    return;
+  }
+
+  lesson=data[course]["l"+num];
+  slideIndex=0;
+  renderSlide();
+}
+
+function renderSlide(){
+  lessonContainer.innerHTML=
+    `<h4>${lesson.title}</h4>`+lesson.slides[slideIndex];
+}
+
+function nextSlide(){
+  if(!lesson) return;
+  if(slideIndex<lesson.slides.length-1){
+    slideIndex++;
+    renderSlide();
+    sendLesson();
+  }
+}
+
+function prevSlide(){
+  if(!lesson) return;
+  if(slideIndex>0){
+    slideIndex--;
+    renderSlide();
+    sendLesson();
+  }
+}
+
+function shareLesson(){
+  if(!lessonConn||!lessonConn.open){
+    alert("Student not connected");
+    return;
+  }
+  sendLesson();
+}
+
+function sendLesson(){
+  if(lessonConn){
+    lessonConn.send({
+      type:"slide",
+      title:lesson.title,
+      html:lesson.slides[slideIndex]
+    });
+  }
+}
+
+function endCall(){
+  if(cameraCall){cameraCall.close();cameraCall=null;}
+}
 </script>
 
 </body>
