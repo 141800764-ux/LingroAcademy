@@ -17,6 +17,14 @@ body{
   display:block;
   margin:0 auto 15px auto;
   max-width:160px;
+  width:30%;
+  height:auto;
+}
+@media (max-width: 768px){
+  .logo{
+    width:50%;
+    margin-bottom:10px;
+  }
 }
 video{
   width:100%;
@@ -29,7 +37,6 @@ video{
   border-radius:15px;
   padding:15px;
   min-height:70vh;
-  overflow:auto;
 }
 .logout-btn{
   position:absolute;
@@ -88,7 +95,7 @@ function initStudent(){
   const id=document.getElementById("studentId").value.trim();
   if(!id){alert("Enter Student ID");return;}
 
-  peer=new Peer(id);
+  peer=new Peer(id, { host:'0.peerjs.com', port:443, secure:true });
 
   peer.on("call",call=>{
     call.answer(localStream);
@@ -102,6 +109,11 @@ function initStudent(){
         lessonContainer.innerHTML=`<h4>${data.title}</h4>`+data.html;
       }
     });
+  });
+
+  peer.on('error', err => {
+    console.error('PeerJS error:', err);
+    alert('PeerJS connection error: ' + err);
   });
 }
 </script>

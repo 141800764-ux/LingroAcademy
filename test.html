@@ -2,105 +2,256 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Lingro Academy – Lesson Admin</title>
+<title>Lingro Academy – Teacher</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <style>
 body{
   background:linear-gradient(135deg,#1540A6,#3C6EFA,#D4AF37);
-  min-height:100vh;
   color:#fff;
   font-family:Inter,sans-serif;
+  min-height:100vh;
 }
-.card{
-  border-radius:20px;
-  background:rgba(255,255,255,.15);
-  backdrop-filter:blur(10px);
+.logo{
+  display:block;
+  margin:0 auto 15px auto;
+  max-width:160px;
+  width:30%;
+  height:auto;
 }
-.preview{
+@media (max-width: 768px){
+  .logo{
+    width:50%;
+    margin-bottom:10px;
+  }
+}
+video{
+  width:100%;
+  border-radius:15px;
+  margin-bottom:10px;
+}
+.lesson-card{
+  background:rgba(255,255,255,.2);
+  padding:15px;
+  border-radius:15px;
+  cursor:pointer;
+  transition:.2s;
+  text-align:center;
+}
+.lesson-card img{
+  width:100%;
+  border-radius:10px;
+  margin-bottom:10px;
+}
+.lesson-card:hover{
+  background:rgba(255,255,255,.35);
+}
+#lessonContainer{
   background:#fff;
   color:#000;
+  border-radius:15px;
   padding:15px;
-  border-radius:10px;
-  min-height:150px;
+  height:100%;
+  min-height:70vh;
+  overflow:auto;
 }
-textarea{ min-height:120px; }
+.slide-controls{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+.logout-btn{
+  position:absolute;
+  top:20px;
+  right:20px;
+}
 </style>
 </head>
 
 <body class="p-4">
 
-<h2 class="text-center mb-4">📚 Lingro Lesson Admin</h2>
+<button class="btn btn-danger logout-btn" onclick="logout()">Logout</button>
 
-<div class="container">
-  <div class="card p-4">
+<img src="images/lingroLogo.png" class="logo" alt="Lingro Academy Logo">
+<h2 class="text-center mb-4">Lingro Academy – Teacher Dashboard</h2>
 
-    <label class="form-label">Course</label>
-    <select id="course" class="form-select mb-3">
-      <option value="kids">Kids (7–15)</option>
-      <option value="adults">Adults</option>
-    </select>
+<div class="row mb-3">
+  <div class="col-md-3">
+    <input id="teacherId" class="form-control" placeholder="Teacher ID">
+    <button class="btn btn-success mt-2 w-100" onclick="initTeacher()">Set ID</button>
+  </div>
+  <div class="col-md-3">
+    <input id="studentId" class="form-control" placeholder="Student ID">
+    <button id="callBtn" class="btn btn-primary mt-2 w-100" onclick="callStudent()" disabled>Call Student</button>
+  </div>
+  <div class="col-md-3">
+    <button class="btn btn-warning mt-2 w-100" onclick="shareLesson()">Share Lesson</button>
+  </div>
+  <div class="col-md-3">
+    <button class="btn btn-danger mt-2 w-100" onclick="endCall()">End Call</button>
+  </div>
+</div>
 
-    <label class="form-label">Lesson Number (1–100)</label>
-    <input id="lessonNumber" type="number" min="1" max="100" class="form-control mb-3">
+<div class="row">
+  <div class="col-md-4 text-center">
+    <h5>Teacher Camera (You)</h5>
+    <video id="teacherVideo" autoplay muted playsinline></video>
 
-    <label class="form-label">Lesson Title</label>
-    <input id="lessonTitle" class="form-control mb-3">
+    <h5 class="mt-3">Student Camera</h5>
+    <video id="studentVideo" autoplay playsinline></video>
+  </div>
 
-    <label class="form-label">Slide Content (HTML allowed)</label>
-    <textarea id="slideContent" class="form-control mb-3"
-      placeholder="Add ONE slide at a time (text, <img>, etc)"></textarea>
+  <div class="col-md-8 text-center">
+    <h5>Lesson Screen</h5>
+    <div id="lessonContainer">
+      <p>Select a lesson to start teaching</p>
+    </div>
 
-    <button class="btn btn-warning w-100 mb-2" onclick="addSlide()">Add Slide</button>
-    <button class="btn btn-success w-100 mb-3" onclick="saveLesson()">Save Lesson</button>
+    <div class="slide-controls">
+      <button class="btn btn-secondary w-50" onclick="prevSlide()">⬅ Prev</button>
+      <button class="btn btn-secondary w-50" onclick="nextSlide()">Next ➡</button>
+    </div>
+  </div>
+</div>
 
-    <h5>Slide Preview</h5>
-    <div id="preview" class="preview"></div>
+<hr>
 
+<h4>Lessons</h4>
+<select id="courseSelect" class="form-select mb-3">
+  <option value="kids">Kids (7–15)</option>
+  <option value="adults">Adults</option>
+</select>
+
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="lesson-card" onclick="loadLesson(1)">
+      <img src="images/brainstorm1.jpeg">
+      <h5>Lesson 1</h5>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="lesson-card" onclick="loadLesson(2)">
+      <img src="images/grammar.jpeg">
+      <h5>Lesson 2</h5>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="lesson-card" onclick="loadLesson(3)">
+      <img src="images/vocabulary.jpeg">
+      <h5>Lesson 3</h5>
+    </div>
   </div>
 </div>
 
 <script>
-let slides = [];
+let peer, localStream, cameraCall, lessonConn;
+let lesson=null, slideIndex=0;
 
-function getData(){
-  return JSON.parse(localStorage.getItem("lingro_courses") || "{}");
+const teacherVideo=document.getElementById("teacherVideo");
+const studentVideo=document.getElementById("studentVideo");
+const lessonContainer=document.getElementById("lessonContainer");
+
+function logout(){
+  localStorage.removeItem("loggedInAdmin");
+  window.location.href="index.html";
 }
 
-function saveData(data){
-  localStorage.setItem("lingro_courses", JSON.stringify(data));
+// Get camera/audio
+navigator.mediaDevices.getUserMedia({video:true,audio:true})
+.then(stream=>{
+  localStream=stream;
+  teacherVideo.srcObject=stream;
+});
+
+function initTeacher(){
+  const id=document.getElementById("teacherId").value.trim();
+  if(!id){alert("Enter Teacher ID"); return;}
+
+  peer = new Peer(id, { host:'0.peerjs.com', port:443, secure:true });
+
+  peer.on("open", id=>{
+    console.log('PeerJS open with ID:', id);
+    document.getElementById("callBtn").disabled = false;
+  });
+
+  peer.on("call", call => {
+    cameraCall = call;
+    call.answer(localStream);
+    call.on("stream", s => studentVideo.srcObject = s);
+  });
+
+  peer.on("connection", conn => lessonConn = conn);
+
+  peer.on('error', err => {
+    console.error('PeerJS error:', err);
+    alert('PeerJS connection error: ' + err);
+  });
 }
 
-function addSlide(){
-  const html = document.getElementById("slideContent").value.trim();
-  if(!html){ alert("Slide is empty"); return; }
-  slides.push(html);
-  document.getElementById("preview").innerHTML = html;
-  document.getElementById("slideContent").value = "";
+function callStudent(){
+  const sid=document.getElementById("studentId").value.trim();
+  if(!sid){alert("Enter Student ID");return;}
+  cameraCall=peer.call(sid,localStream);
+  cameraCall.on("stream",s=>studentVideo.srcObject=s);
+  lessonConn=peer.connect(sid);
 }
 
-function saveLesson(){
-  const course = document.getElementById("course").value;
-  const num = document.getElementById("lessonNumber").value;
-  const title = document.getElementById("lessonTitle").value;
+function loadLesson(num){
+  const course=document.getElementById("courseSelect").value;
+  const data=JSON.parse(localStorage.getItem("lingro_courses")||"{}");
 
-  if(!num || !title || slides.length === 0){
-    alert("Missing fields or slides");
+  if(!data[course]||!data[course]["l"+num]){
+    alert("No lesson content found");
     return;
   }
 
-  const data = getData();
-  if(!data[course]) data[course] = {};
+  lesson=data[course]["l"+num];
+  slideIndex=0;
+  renderSlide();
+}
 
-  data[course]["l"+num] = {
-    title,
-    slides
-  };
+function renderSlide(){
+  lessonContainer.innerHTML=`<h4>${lesson.title}</h4>`+lesson.slides[slideIndex];
+  sendLesson();
+}
 
-  saveData(data);
-  slides = [];
-  document.getElementById("preview").innerHTML = "";
-  alert("Lesson saved successfully!");
+function nextSlide(){
+  if(!lesson) return;
+  if(slideIndex<lesson.slides.length-1){
+    slideIndex++;
+    renderSlide();
+  }
+}
+
+function prevSlide(){
+  if(!lesson) return;
+  if(slideIndex>0){
+    slideIndex--;
+    renderSlide();
+  }
+}
+
+function shareLesson(){
+  if(!lessonConn||!lessonConn.open){
+    alert("Student not connected");
+    return;
+  }
+  sendLesson();
+}
+
+function sendLesson(){
+  if(lessonConn){
+    lessonConn.send({
+      type:"slide",
+      title:lesson.title,
+      html:lesson.slides[slideIndex]
+    });
+  }
+}
+
+function endCall(){
+  if(cameraCall){cameraCall.close();cameraCall=null;}
 }
 </script>
 

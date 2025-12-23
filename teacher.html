@@ -17,6 +17,14 @@ body{
   display:block;
   margin:0 auto 15px auto;
   max-width:160px;
+  width:30%;
+  height:auto;
+}
+@media (max-width: 768px){
+  .logo{
+    width:50%;
+    margin-bottom:10px;
+  }
 }
 video{
   width:100%;
@@ -85,7 +93,6 @@ video{
   </div>
 </div>
 
-<!-- ✅ NEW SCREEN STRUCTURE -->
 <div class="row">
   <div class="col-md-4 text-center">
     <h5>Teacher Camera (You)</h5>
@@ -111,7 +118,6 @@ video{
 <hr>
 
 <h4>Lessons</h4>
-
 <select id="courseSelect" class="form-select mb-3">
   <option value="kids">Kids (7–15)</option>
   <option value="adults">Adults</option>
@@ -151,6 +157,7 @@ function logout(){
   window.location.href="index.html";
 }
 
+// Get camera/audio
 navigator.mediaDevices.getUserMedia({video:true,audio:true})
 .then(stream=>{
   localStream=stream;
@@ -159,15 +166,27 @@ navigator.mediaDevices.getUserMedia({video:true,audio:true})
 
 function initTeacher(){
   const id=document.getElementById("teacherId").value.trim();
-  if(!id){alert("Enter Teacher ID");return;}
-  peer=new Peer(id);
-  peer.on("open",()=>document.getElementById("callBtn").disabled=false);
-  peer.on("call",call=>{
-    cameraCall=call;
-    call.answer(localStream);
-    call.on("stream",s=>studentVideo.srcObject=s);
+  if(!id){alert("Enter Teacher ID"); return;}
+
+  peer = new Peer(id, { host:'0.peerjs.com', port:443, secure:true });
+
+  peer.on("open", id=>{
+    console.log('PeerJS open with ID:', id);
+    document.getElementById("callBtn").disabled = false;
   });
-  peer.on("connection",conn=>lessonConn=conn);
+
+  peer.on("call", call => {
+    cameraCall = call;
+    call.answer(localStream);
+    call.on("stream", s => studentVideo.srcObject = s);
+  });
+
+  peer.on("connection", conn => lessonConn = conn);
+
+  peer.on('error', err => {
+    console.error('PeerJS error:', err);
+    alert('PeerJS connection error: ' + err);
+  });
 }
 
 function callStudent(){
@@ -193,8 +212,8 @@ function loadLesson(num){
 }
 
 function renderSlide(){
-  lessonContainer.innerHTML=
-    `<h4>${lesson.title}</h4>`+lesson.slides[slideIndex];
+  lessonContainer.innerHTML=`<h4>${lesson.title}</h4>`+lesson.slides[slideIndex];
+  sendLesson();
 }
 
 function nextSlide(){
@@ -202,7 +221,6 @@ function nextSlide(){
   if(slideIndex<lesson.slides.length-1){
     slideIndex++;
     renderSlide();
-    sendLesson();
   }
 }
 
@@ -211,7 +229,6 @@ function prevSlide(){
   if(slideIndex>0){
     slideIndex--;
     renderSlide();
-    sendLesson();
   }
 }
 
