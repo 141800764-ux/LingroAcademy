@@ -159,56 +159,41 @@ function logout(){
 
 // Get camera/audio
 navigator.mediaDevices.getUserMedia({video:true,audio:true})
-.then(stream=>{
-  localStream=stream;
-  teacherVideo.srcObject=stream;
-});
+.then(stream=>{ localStream=stream; teacherVideo.srcObject=stream; });
 
 function initTeacher(){
   const id=document.getElementById("teacherId").value.trim();
   if(!id){alert("Enter Teacher ID"); return;}
 
+  // PeerJS with public host
   peer = new Peer(id, { host:'0.peerjs.com', port:443, secure:true });
 
-  peer.on("open", id=>{
-    console.log('PeerJS open with ID:', id);
-    document.getElementById("callBtn").disabled = false;
-  });
+  peer.on("open", id=>{ console.log('PeerJS open with ID:', id); document.getElementById("callBtn").disabled=false; });
 
   peer.on("call", call => {
     cameraCall = call;
     call.answer(localStream);
-    call.on("stream", s => studentVideo.srcObject = s);
+    call.on("stream", s => studentVideo.srcObject=s);
   });
 
   peer.on("connection", conn => lessonConn = conn);
 
-  peer.on('error', err => {
-    console.error('PeerJS error:', err);
-    alert('PeerJS connection error: ' + err);
-  });
+  peer.on('error', err => { console.error('PeerJS error:', err); alert('PeerJS connection error: '+err); });
 }
 
 function callStudent(){
   const sid=document.getElementById("studentId").value.trim();
   if(!sid){alert("Enter Student ID");return;}
-  cameraCall=peer.call(sid,localStream);
-  cameraCall.on("stream",s=>studentVideo.srcObject=s);
+  cameraCall=peer.call(sid, localStream);
+  cameraCall.on("stream", s => studentVideo.srcObject=s);
   lessonConn=peer.connect(sid);
 }
 
 function loadLesson(num){
   const course=document.getElementById("courseSelect").value;
   const data=JSON.parse(localStorage.getItem("lingro_courses")||"{}");
-
-  if(!data[course]||!data[course]["l"+num]){
-    alert("No lesson content found");
-    return;
-  }
-
-  lesson=data[course]["l"+num];
-  slideIndex=0;
-  renderSlide();
+  if(!data[course]||!data[course]["l"+num]){ alert("No lesson content found"); return; }
+  lesson=data[course]["l"+num]; slideIndex=0; renderSlide();
 }
 
 function renderSlide(){
@@ -216,43 +201,14 @@ function renderSlide(){
   sendLesson();
 }
 
-function nextSlide(){
-  if(!lesson) return;
-  if(slideIndex<lesson.slides.length-1){
-    slideIndex++;
-    renderSlide();
-  }
-}
+function nextSlide(){ if(!lesson) return; if(slideIndex<lesson.slides.length-1){ slideIndex++; renderSlide(); } }
+function prevSlide(){ if(!lesson) return; if(slideIndex>0){ slideIndex--; renderSlide(); } }
 
-function prevSlide(){
-  if(!lesson) return;
-  if(slideIndex>0){
-    slideIndex--;
-    renderSlide();
-  }
-}
+function shareLesson(){ if(!lessonConn||!lessonConn.open){ alert("Student not connected"); return; } sendLesson(); }
 
-function shareLesson(){
-  if(!lessonConn||!lessonConn.open){
-    alert("Student not connected");
-    return;
-  }
-  sendLesson();
-}
+function sendLesson(){ if(lessonConn){ lessonConn.send({ type:"slide", title:lesson.title, html:lesson.slides[slideIndex] }); } }
 
-function sendLesson(){
-  if(lessonConn){
-    lessonConn.send({
-      type:"slide",
-      title:lesson.title,
-      html:lesson.slides[slideIndex]
-    });
-  }
-}
-
-function endCall(){
-  if(cameraCall){cameraCall.close();cameraCall=null;}
-}
+function endCall(){ if(cameraCall){ cameraCall.close(); cameraCall=null; } }
 </script>
 
 </body>
