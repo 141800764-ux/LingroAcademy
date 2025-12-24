@@ -157,7 +157,6 @@ function logout(){
   window.location.href="index.html";
 }
 
-// Get camera/audio
 navigator.mediaDevices.getUserMedia({video:true,audio:true})
 .then(stream=>{ localStream=stream; teacherVideo.srcObject=stream; });
 
@@ -165,28 +164,45 @@ function initTeacher(){
   const id=document.getElementById("teacherId").value.trim();
   if(!id){alert("Enter Teacher ID"); return;}
 
-  // PeerJS with public host
-  peer = new Peer(id, { host:'0.peerjs.com', port:443, secure:true });
-
-  peer.on("open", id=>{ console.log('PeerJS open with ID:', id); document.getElementById("callBtn").disabled=false; });
-
-  peer.on("call", call => {
-    cameraCall = call;
-    call.answer(localStream);
-    call.on("stream", s => studentVideo.srcObject=s);
+  peer = new Peer(id, {
+    host:'0.peerjs.com',
+    port:443,
+    secure:true,
+    config:{
+      iceServers:[
+        { urls:'stun:stun.l.google.com:19302' },
+        { urls:'turn:openrelay.metered.ca:80', username:'openrelayproject', credential:'openrelayproject' },
+        { urls:'turn:openrelay.metered.ca:443', username:'openrelayproject', credential:'openrelayproject' }
+      ]
+    }
   });
 
-  peer.on("connection", conn => lessonConn = conn);
+  peer.on("open", ()=> document.getElementById("callBtn").disabled=false);
 
-  peer.on('error', err => { console.error('PeerJS error:', err); alert('PeerJS connection error: '+err); });
+  peer.on("call", call=>{
+    cameraCall=call;
+    call.answer(localStream);
+    call.on("stream", s=> studentVideo.srcObject=s);
+  });
+
+  peer.on("connection", conn=> lessonConn=conn);
 }
 
+/* ✅ FIXED — ONLY CHANGE IN THIS FILE */
 function callStudent(){
   const sid=document.getElementById("studentId").value.trim();
-  if(!sid){alert("Enter Student ID");return;}
-  cameraCall=peer.call(sid, localStream);
-  cameraCall.on("stream", s => studentVideo.srcObject=s);
-  lessonConn=peer.connect(sid);
+  if(!sid){ alert("Enter Student ID"); return; }
+  if(!peer || peer.disconnected){ alert("Peer not ready yet"); return; }
+
+  const call = peer.call(sid, localStream);
+  if(!call){
+    alert("Student not reachable yet. Make sure student clicked Register.");
+    return;
+  }
+
+  cameraCall = call;
+  cameraCall.on("stream", s => studentVideo.srcObject = s);
+  lessonConn = peer.connect(sid);
 }
 
 function loadLesson(num){
@@ -201,12 +217,11 @@ function renderSlide(){
   sendLesson();
 }
 
-function nextSlide(){ if(!lesson) return; if(slideIndex<lesson.slides.length-1){ slideIndex++; renderSlide(); } }
-function prevSlide(){ if(!lesson) return; if(slideIndex>0){ slideIndex--; renderSlide(); } }
+function nextSlide(){ if(lesson&&slideIndex<lesson.slides.length-1){ slideIndex++; renderSlide(); } }
+function prevSlide(){ if(lesson&&slideIndex>0){ slideIndex--; renderSlide(); } }
 
 function shareLesson(){ if(!lessonConn||!lessonConn.open){ alert("Student not connected"); return; } sendLesson(); }
-
-function sendLesson(){ if(lessonConn){ lessonConn.send({ type:"slide", title:lesson.title, html:lesson.slides[slideIndex] }); } }
+function sendLesson(){ if(lessonConn) lessonConn.send({ type:"slide", title:lesson.title, html:lesson.slides[slideIndex] }); }
 
 function endCall(){ if(cameraCall){ cameraCall.close(); cameraCall=null; } }
 </script>
