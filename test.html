@@ -177,7 +177,9 @@ function initTeacher(){
     }
   });
 
-  peer.on("open", ()=> document.getElementById("callBtn").disabled=false);
+  peer.on("open", ()=>{
+    document.getElementById("callBtn").disabled=false;
+  });
 
   peer.on("call", call=>{
     cameraCall=call;
@@ -188,11 +190,14 @@ function initTeacher(){
   peer.on("connection", conn=> lessonConn=conn);
 }
 
-/* ✅ FIXED — ONLY CHANGE IN THIS FILE */
+/* ✅ ONLY CHANGE IS HERE */
 function callStudent(){
   const sid=document.getElementById("studentId").value.trim();
   if(!sid){ alert("Enter Student ID"); return; }
-  if(!peer || peer.disconnected){ alert("Peer not ready yet"); return; }
+  if(!peer || !peer.open){
+    alert("Peer still connecting, please wait a moment and try again.");
+    return;
+  }
 
   const call = peer.call(sid, localStream);
   if(!call){
