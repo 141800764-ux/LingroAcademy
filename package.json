@@ -21,6 +21,7 @@
   "homepage": "https://github.com/141800764-ux/LingroAcademy#readme",
   "dependencies": {
     "express": "^5.2.1",
+    "serve": "^14.2.5",
     "socket.io": "^4.8.2"
   }
 }
