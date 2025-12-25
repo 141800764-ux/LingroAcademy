@@ -190,20 +190,36 @@ function initTeacher(){
 
 /* ✅ FIXED — ONLY CHANGE IN THIS FILE */
 function callStudent(){
-  const sid=document.getElementById("studentId").value.trim();
-  if(!sid){ alert("Enter Student ID"); return; }
-  if(!peer || peer.disconnected){ alert("Peer not ready yet"); return; }
+  const sid = document.getElementById("studentId").value.trim();
+  if(!sid){ 
+    alert("Enter Student ID"); 
+    return; 
+  }
 
+  if(!peer || peer.disconnected){
+    alert("Peer not ready yet. Click Set ID first and wait.");
+    return;
+  }
+
+  // Open data channel FIRST (important for cross-network)
+  lessonConn = peer.connect(sid);
+  lessonConn.on("open", () => {
+    console.log("Lesson channel open");
+  });
+
+  // Then start the media call
   const call = peer.call(sid, localStream);
   if(!call){
-    alert("Student not reachable yet. Make sure student clicked Register.");
+    alert("Student not reachable yet.");
     return;
   }
 
   cameraCall = call;
-  cameraCall.on("stream", s => studentVideo.srcObject = s);
-  lessonConn = peer.connect(sid);
+  cameraCall.on("stream", s => {
+    studentVideo.srcObject = s;
+  });
 }
+
 
 function loadLesson(num){
   const course=document.getElementById("courseSelect").value;
